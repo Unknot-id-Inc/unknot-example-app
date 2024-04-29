@@ -36,7 +36,7 @@ Add to the `dependencies` block of the app module's `build.gradle`:
 implementation("org.unknot:android-sdk:1.0.12")
 ```
 
-> **** The SDK library is not hosted yet! Check back soon to get further details on how to configure maven to download the library.
+> **The SDK library is not hosted yet! Check back soon to get further details on how to configure maven to download the library.**
 
 ## Config Values
 The SDK is configured with 3 values that are usually fixed:
