@@ -62,7 +62,7 @@ val deviceId = restApi.registerDevice("some unique id")
 ```
 Or register a device outside the app, for example with cURL:
 ```bash
-curl -X POST -F api_key=$API_KEY -F location_id=0 -F "manufacturer=some brand" -F "model=some model" -F "android_id=some unique id" $AUTH_TARGET/auth/register/device
+curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "api_key=$API_KEY&location_id=0&manufacturer=some brand&model=some model&android_id=some unique id" $AUTH_TARGET/auth/register/device 
 ```
 
 > Refer to [API-README](API-README.md) for the REST API documentation.
