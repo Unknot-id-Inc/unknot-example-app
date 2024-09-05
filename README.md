@@ -21,11 +21,11 @@ The Unknot SDK requires the host app to request these permissions to function:
  - [CHANGE_NETWORK_STATE](https://developer.android.com/reference/android/Manifest.permission#CHANGE_NETWORK_STATE)
  - [WAKE_LOCK](https://developer.android.com/reference/android/Manifest.permission#WAKE_LOCK)
  - [FOREGROUND_SERVICE](https://developer.android.com/reference/android/Manifest.permission#FOREGROUND_SERVICE)
-
- These permissions are optional:
  - [BLUETOOTH_ADMIN](https://developer.android.com/reference/android/Manifest.permission#BLUETOOTH_ADMIN)
  - [BLUETOOTH_SCAN](https://developer.android.com/reference/android/Manifest.permission#BLUETOOTH_SCAN) (only required for >= API 31)
  - [BLUETOOTH_CONNECT](https://developer.android.com/reference/android/Manifest.permission#BLUETOOTH_CONNECT) (only required for >= API 31)
+
+ These permissions are optional:
  - [ACTIVITY_RECOGNITION](https://developer.android.com/reference/android/Manifest.permission#ACTIVITY_RECOGNITION)
 
  > Refer to [PermissionsProvider.kt](app/src/main/java/com/example/unknotexampleapp/PermissionsProvider.kt) for an example of how to request all these permissions at app startup.
@@ -33,7 +33,7 @@ The Unknot SDK requires the host app to request these permissions to function:
 ## Gradle
 Add to the `dependencies` block of the app module's `build.gradle`:
 ```
-implementation("org.unknot:android-sdk:1.0.12")
+implementation("org.unknot:android-sdk:1.0.14")
 ```
 
 > **The SDK library is not hosted yet! Check back soon to get further details on how to configure maven to download the library.**

@@ -27,6 +27,7 @@ android {
             buildConfigField("String", "API_KEY", "\"${getProperty("API_KEY")}\"")
             buildConfigField("String", "AUTH_TARGET", "\"${getProperty("AUTH_TARGET")}\"")
             buildConfigField("String", "INGESTER_TARGET", "\"${getProperty("INGESTER_TARGET")}\"")
+            buildConfigField("String", "DEVICE_ID", "\"${getProperty("DEVICE_ID")}\"")
         }
     }
 
@@ -81,5 +82,5 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation("com.google.accompanist:accompanist-permissions:0.35.0-alpha")
-    implementation("org.unknot:android-sdk:1.0.12")
+    implementation("org.unknot:android-sdk:1.0.14")
 }

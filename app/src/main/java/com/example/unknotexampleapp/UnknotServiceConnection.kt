@@ -78,7 +78,7 @@ class UnknotServiceConnection(
             callback.onBatchUpdate(count, total)
         }
 
-        override fun arcoreVideoUploadProgress(status: Int, bytesUploaded: Long, bytesTotal: Long) {
+        override fun videoUploadProgress(status: Int, bytesUploaded: Long, bytesTotal: Long) {
         }
     }
 

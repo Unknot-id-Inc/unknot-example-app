@@ -1,6 +1,7 @@
 package com.example.unknotexampleapp
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -30,7 +31,7 @@ import org.unknot.android_sdk.ServiceState
 //import org.unknot.android_sdk.UnknotServiceConnection
 import org.unknot.android_sdk.UnknotServiceController
 
-private val permissions = listOfNotNull(
+private val basePermissions = listOf(
     Manifest.permission.ACCESS_FINE_LOCATION,
     Manifest.permission.ACCESS_COARSE_LOCATION,
     Manifest.permission.ACCESS_WIFI_STATE,
@@ -40,17 +41,25 @@ private val permissions = listOfNotNull(
     Manifest.permission.WAKE_LOCK,
     Manifest.permission.FOREGROUND_SERVICE,
     Manifest.permission.ACTIVITY_RECOGNITION,
-    Manifest.permission.BLUETOOTH_ADMIN,
     Manifest.permission.ACCESS_BACKGROUND_LOCATION
-) +
-        (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) listOf(
-            Manifest.permission.NEARBY_WIFI_DEVICES,
-            Manifest.permission.POST_NOTIFICATIONS
-        ) else listOf()) +
-        (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) listOf(
-            Manifest.permission.BLUETOOTH_SCAN,
-            Manifest.permission.BLUETOOTH_CONNECT,
-        ) else listOf())
+)
+
+@SuppressLint("InlinedApi")
+private val permissionsRequired = permissionsCompat(basePermissions,
+    Build.VERSION_CODES.TIRAMISU to listOf(
+        Manifest.permission.NEARBY_WIFI_DEVICES,
+        Manifest.permission.POST_NOTIFICATIONS
+    ),
+    Build.VERSION_CODES.S to listOf(
+        Manifest.permission.BLUETOOTH_SCAN,
+        Manifest.permission.BLUETOOTH_CONNECT,
+        Manifest.permission.BLUETOOTH_ADVERTISE
+    ),
+    -Build.VERSION_CODES.R to listOf(
+        Manifest.permission.BLUETOOTH,
+        Manifest.permission.BLUETOOTH_ADMIN,
+    )
+)
 
 class MainActivity : ComponentActivity(), UnknotServiceCallback {
 
@@ -64,7 +73,7 @@ class MainActivity : ComponentActivity(), UnknotServiceCallback {
 
     private val sdkArgs = SdkArgs(
         apiKey = BuildConfig.API_KEY,
-        deviceId = "435",
+        deviceId = BuildConfig.DEVICE_ID,
         locationId = "",
         authTarget = BuildConfig.AUTH_TARGET,
         ingesterTarget = BuildConfig.INGESTER_TARGET
@@ -83,7 +92,7 @@ class MainActivity : ComponentActivity(), UnknotServiceCallback {
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    PermissionsProvider(permissions) { allGranted, request ->
+                    PermissionsProvider(permissionsRequired) { allGranted, request ->
                         if (allGranted) {
                             ServiceControls(
                                 state = serviceState,

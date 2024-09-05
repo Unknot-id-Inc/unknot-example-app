@@ -7,15 +7,18 @@ account, and retrieving a token for use in sending gRPC requests.
 
 The current host used for making requests to the REST API is:
 ```
-http://k8s-api-gatewayi-0992b141be-1361074939.us-east-1.elb.amazonaws.com:80
+https://http-prod-api.unknot.id
 ```
 
 ### Device Registration
 
 #### Endpoint
 ```
-GET /auth/register/device
+POST /auth/register/device
 ```
+
+#### Headers
+- `Content-Type`: "application/x-www-form-urlencoded"
 
 #### Parameters
 - `api_key`: API key tied to account
