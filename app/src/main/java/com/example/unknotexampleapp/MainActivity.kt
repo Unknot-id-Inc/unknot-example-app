@@ -6,29 +6,47 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.example.unknotexampleapp.ui.theme.UnknotExampleAppTheme
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.MarkerComposable
+import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.maps.android.compose.rememberMarkerState
+import org.unknot.android_sdk.ForwardLocation
 import org.unknot.android_sdk.SdkArgs
 import org.unknot.android_sdk.ServiceState
-//import org.unknot.android_sdk.UnknotServiceCallback
-//import org.unknot.android_sdk.UnknotServiceConnection
 import org.unknot.android_sdk.UnknotServiceController
 
 private val basePermissions = listOf(
@@ -68,15 +86,17 @@ class MainActivity : ComponentActivity(), UnknotServiceCallback {
     private var serviceState: ServiceState? by mutableStateOf(null)
     private var serviceBound by mutableStateOf(false)
     private var batchCount by mutableIntStateOf(0)
+    private var currentLocation by mutableStateOf<ForwardLocation?>(null)
 
     private val notification = ExampleNotification(this)
 
     private val sdkArgs = SdkArgs(
         apiKey = BuildConfig.API_KEY,
         deviceId = BuildConfig.DEVICE_ID,
-        locationId = "",
+        locationId = "21",
         authTarget = BuildConfig.AUTH_TARGET,
-        ingesterTarget = BuildConfig.INGESTER_TARGET
+        ingesterTarget = BuildConfig.INGESTER_TARGET,
+        streamerTarget = BuildConfig.STREAM_TARGET
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -98,11 +118,13 @@ class MainActivity : ComponentActivity(), UnknotServiceCallback {
                                 state = serviceState,
                                 bound = serviceBound,
                                 batchCount = batchCount,
+                                currentLocation = currentLocation,
                                 onStart = {
                                     UnknotServiceController.startDataCollection(
                                         ctx = this@MainActivity,
                                         args = sdkArgs,
-                                        notification = notification.getNotification("Session running")
+                                        notification = notification.getNotification("Session running"),
+                                        forwardPredictions = true
                                     )
                                 },
                                 onStop = {
@@ -129,6 +151,10 @@ class MainActivity : ComponentActivity(), UnknotServiceCallback {
         batchCount = count
     }
 
+    override fun onLocation(location: ForwardLocation) {
+        currentLocation = location
+    }
+
     override fun onBound() {
         serviceBound = true
     }
@@ -142,53 +168,138 @@ class MainActivity : ComponentActivity(), UnknotServiceCallback {
     }
 }
 
+
+@Composable
+fun Map(
+    modifier: Modifier = Modifier,
+    currentLocation: ForwardLocation?
+) {
+    val cameraPositionState = rememberCameraPositionState()
+
+    var needsPosition by remember { mutableStateOf(true) }
+    val currentMarker = rememberMarkerState("current")
+
+    val ctx = LocalContext.current
+    val unknotMarker = remember { markerBmp(ctx.resources, R.drawable.unknot_logo, Color.Green).asImageBitmap() }
+    val androidMarker = remember { markerBmp(ctx.resources, R.drawable.ic_android_black_24dp, Color.Red).asImageBitmap() }
+
+    LaunchedEffect(currentLocation) {
+        currentLocation?.let {
+            val newpos = LatLng(currentLocation.latitude, currentLocation.longitude)
+            if (needsPosition) {
+                cameraPositionState.animate(
+                    CameraUpdateFactory.newCameraPosition(
+                        CameraPosition(
+                            newpos,
+                            15f,
+                            0f,
+                            0f
+                        )
+                    )
+                )
+                needsPosition = false
+            }
+
+            currentMarker.position = newpos
+        }
+    }
+
+
+    GoogleMap(
+        modifier = modifier,
+        cameraPositionState = cameraPositionState,
+        uiSettings = MapUiSettings(
+            mapToolbarEnabled = false,
+            indoorLevelPickerEnabled = false,
+            zoomControlsEnabled = false,
+            rotationGesturesEnabled = false,
+            tiltGesturesEnabled = false
+        ),
+        properties = MapProperties(
+            isMyLocationEnabled = true
+        )
+    ) {
+        if (currentLocation != null) {
+            MarkerComposable(state = currentMarker) {
+                if (currentLocation.provider == ForwardLocation.Provider.Unknot) {
+                    Image(
+                        bitmap = unknotMarker,
+                        contentDescription = null
+                    )
+                } else {
+                    Image(
+                        bitmap = androidMarker,
+                        contentDescription = null
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun ServiceControls(
     state: ServiceState?,
     bound: Boolean,
     batchCount: Int,
+    currentLocation: ForwardLocation?,
     onStart: () -> Unit,
     onStop: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier) {
-        Field("Service bound", bound)
-        Field("Service state",
-            when (state) {
-                is ServiceState.Running -> "Running"
-                is ServiceState.Idle -> "Idle"
-                is ServiceState.Error -> "Error"
-                ServiceState.Syncing -> "Syncing"
-                ServiceState.Unspecified -> "Unspecified"
-                null -> "Stopped"
-            }
+        Map(
+            modifier = Modifier
+                .fillMaxWidth(.8f)
+                //.weight(1f)
+                .height(300.dp)
+                .padding(bottom = 30.dp)
+            ,
+            currentLocation = currentLocation
         )
 
-        Field("Session running", state is ServiceState.Running)
+        Column(Modifier.align(Alignment.CenterHorizontally)) {
+            Field("Service bound", bound)
+            Field(
+                "Service state",
+                when (state) {
+                    is ServiceState.Running -> "Running"
+                    is ServiceState.Idle -> "Idle"
+                    is ServiceState.Error -> "Error"
+                    ServiceState.Syncing -> "Syncing"
+                    ServiceState.Unspecified -> "Unspecified"
+                    null -> "Stopped"
+                }
+            )
 
-        Field("Session ID", (state as? ServiceState.Running)?.sessionId ?: "null")
 
-        Field("Batches to sync", "$batchCount")
+            Field("Session running", state is ServiceState.Running)
+            Field("Device ID", BuildConfig.DEVICE_ID)
+            Field("Session ID", (state as? ServiceState.Running)?.sessionId ?: "null")
+            Field("Batches to sync", "$batchCount")
 
-        if (state is ServiceState.Running) {
-            Button(
-                onClick = onStop,
-                colors = ButtonDefaults.buttonColors(
-                    contentColor = Color.White,
-                    containerColor = Color.Red
-                )
-            ) {
-                Text("STOP SERVICE")
-            }
-        } else {
-            Button(
-                onClick = onStart,
-                colors = ButtonDefaults.buttonColors(
-                    contentColor = Color.White,
-                    containerColor = Color(0xff007700)
-                )
-            ) {
-                Text("START SERVICE")
+            Spacer(Modifier.height(10.dp))
+
+            if (state is ServiceState.Running) {
+                Button(
+                    onClick = onStop,
+                    colors = ButtonDefaults.buttonColors(
+                        contentColor = Color.White,
+                        containerColor = Color.Red
+                    )
+                ) {
+                    Text("STOP SERVICE")
+                }
+            } else {
+                Button(
+                    onClick = onStart,
+                    colors = ButtonDefaults.buttonColors(
+                        contentColor = Color.White,
+                        containerColor = Color(0xff007700)
+                    )
+                ) {
+                    Text("START SERVICE")
+                }
             }
         }
 
@@ -240,6 +351,7 @@ fun ServiceControlsPreview() {
         bound = true,
         batchCount = 0,
         onStart = {},
-        onStop = {}
+        onStop = {},
+        currentLocation = null
     )
 }

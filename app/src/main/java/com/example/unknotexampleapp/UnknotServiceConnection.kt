@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
+import org.unknot.android_sdk.ForwardLocation
 import org.unknot.android_sdk.IUnknotService
 import org.unknot.android_sdk.IUnknotServiceCallback
 import org.unknot.android_sdk.ServiceState
@@ -19,6 +20,7 @@ interface UnknotServiceCallback {
     fun onBound()
     fun onUnbound()
     fun onBatchUpdate(count: Int, total: Int)
+    fun onLocation(location: ForwardLocation)
 }
 
 class UnknotServiceConnection(
@@ -32,11 +34,14 @@ class UnknotServiceConnection(
         Intent(context, UnknotService::class.java).also {
             context.bindService(it, this, Context.BIND_AUTO_CREATE)
         }
+        bound = true
     }
 
     fun unbind(context: Context) {
-        context.unbindService(this)
-        bound = false
+        if (bound) {
+            context.unbindService(this)
+            bound = false
+        }
     }
 
     fun autoBind(activity: Activity) = autoBind(activity.application)
@@ -80,6 +85,12 @@ class UnknotServiceConnection(
 
         override fun videoUploadProgress(status: Int, bytesUploaded: Long, bytesTotal: Long) {
         }
+
+        override fun receiveLocation(location: ForwardLocation?) {
+            if (location != null) {
+                callback.onLocation(location)
+            }
+        }
     }
 
     override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -88,13 +99,13 @@ class UnknotServiceConnection(
 
             callback.onUpdateServiceState(it.serviceState)
         }
-        bound = true
+        //bound = true
         callback.onBound()
     }
 
     override fun onServiceDisconnected(name: ComponentName?) {
         remoteService = null
-        bound = false
+        //bound = false
         callback.onUnbound()
     }
 }

@@ -27,7 +27,9 @@ android {
             buildConfigField("String", "API_KEY", "\"${getProperty("API_KEY")}\"")
             buildConfigField("String", "AUTH_TARGET", "\"${getProperty("AUTH_TARGET")}\"")
             buildConfigField("String", "INGESTER_TARGET", "\"${getProperty("INGESTER_TARGET")}\"")
+            buildConfigField("String", "STREAM_TARGET", "\"${getProperty("STREAM_TARGET")}\"")
             buildConfigField("String", "DEVICE_ID", "\"${getProperty("DEVICE_ID")}\"")
+            manifestPlaceholders["MAPS_API_KEY"] = getProperty("MAPS_API_KEY")
         }
     }
 
@@ -63,8 +65,8 @@ android {
     }
 }
 
+//noinspection UseTomlInstead
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -73,7 +75,6 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    //implementation(libs.firebase.common.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -82,5 +83,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation("com.google.accompanist:accompanist-permissions:0.35.0-alpha")
-    implementation("org.unknot:android-sdk:1.0.14")
+    implementation("org.unknot:android-sdk:1.0.17")
+    implementation("com.google.maps.android:maps-compose:4.3.3")
 }
