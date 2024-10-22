@@ -93,7 +93,7 @@ class MainActivity : ComponentActivity(), UnknotServiceCallback {
     private val sdkArgs = SdkArgs(
         apiKey = BuildConfig.API_KEY,
         deviceId = BuildConfig.DEVICE_ID,
-        locationId = "21",
+        locationId = "",
         authTarget = BuildConfig.AUTH_TARGET,
         ingesterTarget = BuildConfig.INGESTER_TARGET,
         streamerTarget = BuildConfig.STREAM_TARGET
@@ -220,18 +220,12 @@ fun Map(
         )
     ) {
         if (currentLocation != null) {
-            MarkerComposable(state = currentMarker) {
-                if (currentLocation.provider == ForwardLocation.Provider.Unknot) {
-                    Image(
-                        bitmap = unknotMarker,
-                        contentDescription = null
-                    )
-                } else {
-                    Image(
-                        bitmap = androidMarker,
-                        contentDescription = null
-                    )
-                }
+            MarkerComposable(currentLocation.provider.name, state = currentMarker) {
+                Image(
+                    bitmap = if (currentLocation.provider == ForwardLocation.Provider.Unknot)
+                        unknotMarker else androidMarker,
+                    contentDescription = null
+                )
             }
         }
     }
