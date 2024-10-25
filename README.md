@@ -88,7 +88,8 @@ val sdkArgs = SdkArgs(
     deviceId = DEVICE_ID,
     locationId = "", // No location is defined by an empty string
     authTarget = BuildConfig.AUTH_TARGET,
-    ingesterTarget = BuildConfig.INGESTER_TARGET
+    ingesterTarget = BuildConfig.INGESTER_TARGET,
+    streamerTarget = BuildConfig.STREAM_TARGET
 )
 ```
 
