@@ -91,7 +91,8 @@ Then pass this object to `UnknotServiceController.startDataCollection()`:
 UnknotServiceController.startDataCollection(
     ctx = this@MainActivity,
     args = sdkArgs,
-    notification = notification.getNotification("Session running")
+    notification = notification.getNotification("Session running"),
+    forwardPredictions = true // flag to enable returning predicted locations from service
 )
 ```
 > Note the `notification` parameter. Since `UnknotService` runs as an Android
@@ -127,7 +128,7 @@ class MainActivity : ComponentActivity(), UnknotServiceCallback {
     ...
 ```
 
-`UnknotServiceCallback` defines 4 methods to implement that are called on state
+`UnknotServiceCallback` defines 5 methods to implement that are called on state
 changes in the service. In this example app we simply update variables in
 `MainActivity` to provide the updated state to the app's UI:
 ```kotlin
@@ -150,6 +151,11 @@ override fun onUnbound() {
 override fun onUpdateServiceState(state: ServiceState) {
     serviceState = state
 }
+
+override fun onLocation(location: ForwardLocation) {
+    currentLocation = location
+}
+
 ```
 
 Finally, in `onCreate` for instance, call the `autoBind` method:
@@ -162,8 +168,7 @@ override fun onCreate(savedInstanceState: Bundle?) {
 ```
 
 If you want more control over how the service binding takes place, you can use
-normal [Android binding
-procedures](https://developer.android.com/develop/background-work/services/bound-services#Binding).
+normal [Android binding procedures](https://developer.android.com/develop/background-work/services/bound-services#Binding).
 Refer to
 [UnknotServiceConnection.kt](app/src/main/java/com/example/unknotexampleapp/UnknotServiceConnection.kt)
 to see how the internal AIDL interfaces are implemented.
@@ -218,4 +223,23 @@ After a session is requested to be stopped, `ServiceState` will either
 transition directly to `ServiceState.Idle`, or if data from the session still
 needs to be synced with the server, will first return `ServiceState.Syncing`,
 then `ServiceState.Idle` once the session data is fully synced.
+
+## Retreiving location predictions
+When the `UnknotServiceController.startDataCollection()` function is called with the
+`forwardPredictions` parameter set to `true`, locations will be returned from the service via the
+`onLocation(location: ForwardLocation)` method of `UnknotServiceCallback`. 
+
+Depending on whether predicted locations are available, the `location` parameter will either contain
+a predicted location from Unknot, or a location provided by Android FusedLocation. To distinguish
+between Unknot locations and Android locations, check the `provider` field of the `ForwardLocation`
+object.
+```kotlin
+when (location.provider) {
+    Provider.Unknot -> // Unknot predicted location
+    Provider.System -> // Android location
+}
+```
+
+For Unknot predicted locations, the `level` field will also be set to the string value of the
+current level, or "UNK" if the level is unknown.
 
