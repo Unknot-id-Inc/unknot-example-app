@@ -33,7 +33,7 @@ The Unknot SDK requires the host app to request these permissions to function:
 ## Gradle
 Add to the `dependencies` block of the app module's `build.gradle`:
 ```
-implementation("org.unknot:android-sdk:1.0.22")
+implementation("org.unknot:android-sdk:1.0.23")
 ```
 
 > **The SDK library is not hosted yet! Check back soon to get further details on how to configure maven to download the library.**
@@ -43,6 +43,7 @@ The SDK is configured with 3 values that are usually fixed:
 - `API_KEY`: UUID that provides access to your Unknot account.
 - `AUTH_TARGET`: URL to an Unknot REST server.
 - `INGESTER_TARGET`: URL to an Unknot synchronization server. 
+- `STREAM_TARGET`: URL to an Unknot location predicition WebSocket server.
 
 > These values could be hardcoded into your app as normal variables, however it
 > may be prudent to try to keep them at least somewhat secret, especially
@@ -50,6 +51,11 @@ The SDK is configured with 3 values that are usually fixed:
 > with access to the APK, this example app uses a method that avoids having to
 > commit the values to a repo. Checkout [local.properties.example](local.properties.example) and
 > [build.gradle.kts](app/build.gradle.kts#L26) for reference.
+
+> For displaying predicted location on a Google Maps UI within this example app, a Google Maps API
+> Key is also required. The `MAPS_API_KEY` can be set in `local.properties`, or entered directly
+> into `AndroidManifest.xml`
+
 
 ## Device ID
 Beyond the config values, you will need a Device ID to start a session. If you
