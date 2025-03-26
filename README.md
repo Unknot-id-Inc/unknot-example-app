@@ -250,3 +250,8 @@ when (location.provider) {
 For Unknot predicted locations, the `level` field will also be set to the string value of the
 current level, or "UNK" if the level is unknown.
 
+## Map integration
+
+For a more detailed example for how to integrate the SDK with Google Maps or Mapbox, check out the
+[Unknot Map Test](https://github.com/Unknot-id-Inc/unknot-map-test/) repo.
+
