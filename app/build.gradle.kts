@@ -8,12 +8,12 @@ plugins {
 
 android {
     namespace = "com.example.unknotexampleapp"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.unknotexampleapp"
         minSdk = 29
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -83,6 +83,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation("com.google.accompanist:accompanist-permissions:0.35.0-alpha")
-    implementation("org.unknot:android-sdk:1.0.23")
+    implementation("org.unknot:android-sdk:1.0.36")
     implementation("com.google.maps.android:maps-compose:4.3.3")
 }
