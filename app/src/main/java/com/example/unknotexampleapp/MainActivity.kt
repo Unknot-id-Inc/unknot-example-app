@@ -152,6 +152,7 @@ class MainActivity : ComponentActivity(), UnknotServiceCallback {
     }
 
     override fun onLocation(location: ForwardLocation) {
+        println("Forward Location: $location")
         currentLocation = location
     }
 

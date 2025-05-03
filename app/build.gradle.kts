@@ -83,6 +83,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation("com.google.accompanist:accompanist-permissions:0.35.0-alpha")
-    implementation("org.unknot:android-sdk:1.0.36")
+    implementation("org.unknot:android-sdk:1.0.40")
     implementation("com.google.maps.android:maps-compose:4.3.3")
 }
