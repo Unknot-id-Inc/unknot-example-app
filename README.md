@@ -33,7 +33,7 @@ The Unknot SDK requires the host app to request these permissions to function:
 ## Gradle
 Add to the `dependencies` block of the app module's `build.gradle`:
 ```
-implementation("org.unknot:android-sdk:1.0.36")
+implementation("org.unknot:android-sdk:1.0.47")
 ```
 
 > **The SDK library is not hosted yet! Check back soon to get further details on how to configure maven to download the library.**
@@ -247,8 +247,30 @@ when (location.provider) {
 }
 ```
 
-For Unknot predicted locations, the `level` field will also be set to the string value of the
-current level, or "UNK" if the level is unknown.
+For Unknot predicted locations:
+- The `level` field will also be set to the string value of the current level, or "UNK" if the level is unknown.
+- The `floorLevel` field will be set to a sortable integer value representing the floor number of the current
+  level, or null if there is no number value associated with the level. This number may be negative.
+
+## Logging
+To enable remote logging for debug builds, add this to the `Application` class:
+```kotlin
+class UnknotExampleApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        if (BuildConfig.DEBUG) {
+            Logger.init(this, Log.DEBUG)
+        }
+    }
+}
+```
+
+The second parameter to `Logger.init()` specifies what level of logs will get stored for remote logging, as
+well as which will be printed to Logcat. If you don't want to enable remote logging, but do want to reduce
+the amount of logging the SDK pushes to Logcat, just call `Logger.setLevel()`:
+```kotlin
+Logger.setLevel(Log.INFO)
+```
 
 ## Map integration
 
