@@ -19,6 +19,7 @@ The Unknot SDK requires the host app to request these permissions to function:
  - [CHANGE_WIFI_STATE](https://developer.android.com/reference/android/Manifest.permission#CHANGE_WIFI_STATE)
  - [ACCESS_NETWORK_STATE](https://developer.android.com/reference/android/Manifest.permission#ACCESS_NETWORK_STATE)
  - [CHANGE_NETWORK_STATE](https://developer.android.com/reference/android/Manifest.permission#CHANGE_NETWORK_STATE)
+ - [READ_PHONE_STATE](https://developer.android.com/reference/android/Manifest.permission#READ_PHONE_STATE)
  - [WAKE_LOCK](https://developer.android.com/reference/android/Manifest.permission#WAKE_LOCK)
  - [FOREGROUND_SERVICE](https://developer.android.com/reference/android/Manifest.permission#FOREGROUND_SERVICE)
  - [BLUETOOTH_ADMIN](https://developer.android.com/reference/android/Manifest.permission#BLUETOOTH_ADMIN)
@@ -37,6 +38,27 @@ implementation("org.unknot:android-sdk:1.0.47")
 ```
 
 > **The SDK library is not hosted yet! Check back soon to get further details on how to configure maven to download the library.**
+
+## Proguard
+Use these rules to prevent runtime failures:
+```
+# Keep Unknot SDK 
+-keep class org.unknot.android_sdk.** { *; }
+
+# Keep protobuf/grpc defs
+-keep class * extends com.google.protobuf.GeneratedMessageLite { *; }
+-keep class * extends com.google.protobuf.GeneratedMessageV3 { *; }
+
+-keep class telemetry_ingester.** { *; }
+
+-keepclassmembers class io.grpc.** { *; }
+-dontwarn io.grpc.**
+-keep class io.grpc.** { *; }
+
+-keepclassmembers class * extends com.google.protobuf.GeneratedMessageV3 {
+  static *** getDefaultInstance();
+}
+```
 
 ## Config Values
 The SDK is configured with 3 values that are usually fixed:
