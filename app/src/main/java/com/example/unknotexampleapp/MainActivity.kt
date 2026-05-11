@@ -6,7 +6,6 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,20 +29,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.unknotexampleapp.ui.theme.UnknotExampleAppTheme
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapProperties
-import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.MarkerComposable
-import com.google.maps.android.compose.rememberCameraPositionState
-import com.google.maps.android.compose.rememberMarkerState
+import org.maplibre.compose.camera.CameraPosition
+import org.maplibre.compose.camera.rememberCameraState
+import org.maplibre.compose.expressions.dsl.const
+import org.maplibre.compose.expressions.dsl.image
+import org.maplibre.compose.expressions.value.SymbolAnchor
+import org.maplibre.compose.layers.SymbolLayer
+import org.maplibre.compose.map.GestureOptions
+import org.maplibre.compose.map.MapOptions
+import org.maplibre.compose.map.MaplibreMap
+import org.maplibre.compose.map.OrnamentOptions
+import org.maplibre.compose.sources.GeoJsonData
+import org.maplibre.compose.sources.rememberGeoJsonSource
+import org.maplibre.compose.style.BaseStyle
+import org.maplibre.spatialk.geojson.Point
+import org.maplibre.spatialk.geojson.Position
 import org.unknot.android_sdk.ForwardLocation
 import org.unknot.android_sdk.SdkArgs
 import org.unknot.android_sdk.ServiceState
@@ -59,7 +64,8 @@ private val basePermissions = listOf(
     Manifest.permission.WAKE_LOCK,
     Manifest.permission.FOREGROUND_SERVICE,
     Manifest.permission.ACTIVITY_RECOGNITION,
-    Manifest.permission.ACCESS_BACKGROUND_LOCATION
+    Manifest.permission.ACCESS_BACKGROUND_LOCATION,
+    Manifest.permission.READ_PHONE_STATE
 )
 
 @SuppressLint("InlinedApi")
@@ -124,7 +130,13 @@ class MainActivity : ComponentActivity(), UnknotServiceCallback {
                                         ctx = this@MainActivity,
                                         args = sdkArgs,
                                         notification = notification.getNotification("Session running"),
-                                        forwardPredictions = true
+                                        forwardPredictions = true,
+                                        // change to true if you only want Unknot locations to be
+                                        // provided, even if the service is currently unavailable
+                                        // because of some network or other error. When set to false
+                                        // Android system locations will be forwarded if no Unknot
+                                        // location has been provided for 10 or more seconds
+                                        disableForwardAndroidLocation = false
                                     )
                                 },
                                 onStop = {
@@ -175,59 +187,63 @@ fun Map(
     modifier: Modifier = Modifier,
     currentLocation: ForwardLocation?
 ) {
-    val cameraPositionState = rememberCameraPositionState()
-
+    val cameraState = rememberCameraState()
     var needsPosition by remember { mutableStateOf(true) }
-    val currentMarker = rememberMarkerState("current")
 
-    val ctx = LocalContext.current
-    val unknotMarker = remember { markerBmp(ctx.resources, R.drawable.unknot_logo, Color.Green).asImageBitmap() }
-    val androidMarker = remember { markerBmp(ctx.resources, R.drawable.ic_android_black_24dp, Color.Red).asImageBitmap() }
+    val res = LocalResources.current
+    val unknotMarker = remember { markerBmp(res, R.drawable.unknot_logo, Color.Green).asImageBitmap() }
+    val androidMarker = remember { markerBmp(res, R.drawable.ic_android_black_24dp, Color.Red).asImageBitmap() }
+    val currentPosition = remember(currentLocation) {
+        currentLocation?.let {
+            Position(
+                longitude = it.longitude,
+                latitude = it.latitude
+            )
+        }
+    }
 
     LaunchedEffect(currentLocation) {
-        currentLocation?.let {
-            val newpos = LatLng(currentLocation.latitude, currentLocation.longitude)
+        currentPosition?.let {
             if (needsPosition) {
-                cameraPositionState.animate(
-                    CameraUpdateFactory.newCameraPosition(
-                        CameraPosition(
-                            newpos,
-                            15f,
-                            0f,
-                            0f
-                        )
+                cameraState.animateTo(
+                    CameraPosition(
+                        target = it,
+                        zoom = 15.0,
+                        tilt = 0.0,
+                        bearing = 0.0
                     )
                 )
                 needsPosition = false
             }
-
-            currentMarker.position = newpos
         }
     }
 
-
-    GoogleMap(
+    MaplibreMap(
         modifier = modifier,
-        cameraPositionState = cameraPositionState,
-        uiSettings = MapUiSettings(
-            mapToolbarEnabled = false,
-            indoorLevelPickerEnabled = false,
-            zoomControlsEnabled = false,
-            rotationGesturesEnabled = false,
-            tiltGesturesEnabled = false
-        ),
-        properties = MapProperties(
-            isMyLocationEnabled = true
+        baseStyle = BaseStyle.Uri("asset://positron.json"),
+        cameraState = cameraState,
+        options = MapOptions(
+            gestureOptions = GestureOptions.RotationLocked,
+            ornamentOptions = OrnamentOptions.AllDisabled
         )
     ) {
-        if (currentLocation != null) {
-            MarkerComposable(currentLocation.provider.name, state = currentMarker) {
-                Image(
-                    bitmap = if (currentLocation.provider == ForwardLocation.Provider.Unknot)
-                        unknotMarker else androidMarker,
-                    contentDescription = null
+        if (currentPosition != null && currentLocation != null) {
+            val markerSource = rememberGeoJsonSource(
+                GeoJsonData.Features(
+                    Point(currentPosition)
                 )
-            }
+            )
+            SymbolLayer(
+                id = "current-location-marker",
+                source = markerSource,
+                iconImage = image(
+                    if (currentLocation.provider == ForwardLocation.Provider.Unknot)
+                        unknotMarker else androidMarker
+                ),
+                iconAnchor = const(SymbolAnchor.Bottom),
+                iconAllowOverlap = const(true),
+                iconIgnorePlacement = const(true)
+            )
         }
     }
 }

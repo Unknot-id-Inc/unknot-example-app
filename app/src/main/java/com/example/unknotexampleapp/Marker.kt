@@ -15,13 +15,16 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.res.ResourcesCompat
+import androidx.compose.ui.platform.LocalResources
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.withSave
 
 private const val mPad = 15f
 private const val mWidth = 120
 private const val mHeight = 120
 private const val mTriangle = 50
 fun markerBack(background: Color): Bitmap =
-    Bitmap.createBitmap(mWidth, mHeight + mTriangle, Bitmap.Config.ARGB_8888).also { bmp ->
+    createBitmap(mWidth, mHeight + mTriangle).also { bmp ->
         // marker shape
         val path = Path().apply {
             moveTo(mPad, mPad)
@@ -33,15 +36,16 @@ fun markerBack(background: Color): Bitmap =
         }
 
         Canvas(bmp).apply {
-            save()
-            // clip inverse marker shape so shadow layer only draws outside shape bounds
-            clipOutPath(path)
-            drawPath(path,
-                Paint().apply {
-                    setShadowLayer(10f, 0f, 0f, Color.Black.copy(.5f).toArgb())
-                }
-            )
-            restore()
+            withSave {
+                // clip inverse marker shape so shadow layer only draws outside shape bounds
+                clipOutPath(path)
+                drawPath(
+                    path,
+                    Paint().apply {
+                        setShadowLayer(10f, 0f, 0f, Color.Black.copy(.5f).toArgb())
+                    }
+                )
+            }
 
             // draw and fill marker shape
             drawPath(path,
@@ -59,7 +63,7 @@ fun MarkerPreview() {
     Row {
         Image(
             bitmap = markerBmp(
-                LocalContext.current.resources,
+                LocalResources.current,
                 R.drawable.unknot_logo,
                 Color.Green
             ).asImageBitmap(),
@@ -67,7 +71,7 @@ fun MarkerPreview() {
         )
         Image(
             bitmap = markerBmp(
-                LocalContext.current.resources,
+                LocalResources.current,
                 R.drawable.ic_android_black_24dp,
                 Color.Red
             ).asImageBitmap(),

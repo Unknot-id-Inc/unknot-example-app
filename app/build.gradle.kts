@@ -15,8 +15,8 @@ android {
         applicationId = "com.example.unknotexampleapp"
         minSdk = 29
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -30,7 +30,6 @@ android {
             buildConfigField("String", "INGESTER_TARGET", "\"${getProperty("INGESTER_TARGET")}\"")
             buildConfigField("String", "STREAM_TARGET", "\"${getProperty("STREAM_TARGET")}\"")
             buildConfigField("String", "DEVICE_ID", "\"${getProperty("DEVICE_ID")}\"")
-            manifestPlaceholders["MAPS_API_KEY"] = getProperty("MAPS_API_KEY")
         }
     }
 
@@ -76,7 +75,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.maplibre.compose)
-    implementation("com.google.accompanist:accompanist-permissions:0.37.3")
+    implementation(libs.accompanist.permissions)
     implementation("org.unknot:android-sdk:1.0.53")
-    //implementation("com.google.maps.android:maps-compose:4.3.3")
 }

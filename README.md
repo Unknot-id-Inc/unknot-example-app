@@ -13,6 +13,7 @@ The Unknot SDK requires the host app to request these permissions to function:
  - [POST_NOTIFICATIONS](https://developer.android.com/reference/android/Manifest.permission#POST_NOTIFICATIONS) (only requried for >= API 33)
  - [NEARBY_WIFI_DEVICES](https://developer.android.com/reference/android/Manifest.permission#NEARBY_WIFI_DEVICES) (may be removed in future versions)
  - [ACCESS_BACKGROUND_LOCATION](https://developer.android.com/reference/android/Manifest.permission#ACCESS_BACKGROUND_LOCATION)
+ - [READ_PHONE_STATE](https://developer.android.com/reference/android/Manifest.permission#READ_PHONE_STATE)
 
  These permissions are also required, but generally do not invoke a user prompt:
  - [ACCESS_WIFI_STATE](https://developer.android.com/reference/android/Manifest.permission#ACCESS_WIFI_STATE)
@@ -121,7 +122,8 @@ UnknotServiceController.startDataCollection(
     ctx = this@MainActivity,
     args = sdkArgs,
     notification = notification.getNotification("Session running"),
-    forwardPredictions = true // flag to enable returning predicted locations from service
+    forwardPredictions = true, // flag to enable returning predicted locations from service
+    disableForwardAndroidLocation = false // disable fallback to Android system location if Unknot location not available for 10+ seconds
 )
 ```
 > Note the `notification` parameter. Since `UnknotService` runs as an Android
