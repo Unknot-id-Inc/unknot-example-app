@@ -34,7 +34,7 @@ The Unknot SDK requires the host app to request these permissions to function:
 ## Gradle
 Add to the `dependencies` block of the app module's `build.gradle`:
 ```
-implementation("org.unknot:android-sdk:1.0.47")
+implementation("org.unknot:android-sdk:1.0.53")
 ```
 
 > **The SDK library is not hosted yet! Check back soon to get further details on how to configure maven to download the library.**
