@@ -4,7 +4,6 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
@@ -61,12 +60,6 @@ android {
     }
 }
 
-kotlin {
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_17)
-    }
-}
-
 //noinspection UseTomlInstead
 dependencies {
     implementation(libs.androidx.core.ktx)
@@ -82,7 +75,8 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    implementation("com.google.accompanist:accompanist-permissions:0.35.0-alpha")
+    implementation(libs.maplibre.compose)
+    implementation("com.google.accompanist:accompanist-permissions:0.37.3")
     implementation("org.unknot:android-sdk:1.0.53")
-    implementation("com.google.maps.android:maps-compose:4.3.3")
+    //implementation("com.google.maps.android:maps-compose:4.3.3")
 }
