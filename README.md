@@ -75,11 +75,6 @@ The SDK is configured with 3 values that are usually fixed:
 > commit the values to a repo. Checkout [local.properties.example](local.properties.example) and
 > [build.gradle.kts](app/build.gradle.kts#L26) for reference.
 
-> For displaying predicted location on a Google Maps UI within this example app, a Google Maps API
-> Key is also required. The `MAPS_API_KEY` can be set in `local.properties`, or entered directly
-> into `AndroidManifest.xml`
-
-
 ## Device ID
 Beyond the config values, you will need a Device ID to start a session. If you
 do not have an ID for a particular device, you need to register it using the
