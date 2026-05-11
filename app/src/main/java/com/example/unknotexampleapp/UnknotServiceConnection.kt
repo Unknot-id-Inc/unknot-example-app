@@ -10,6 +10,7 @@ import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
 import org.unknot.android_sdk.ForwardLocation
+import org.unknot.android_sdk.GtPoint
 import org.unknot.android_sdk.IUnknotService
 import org.unknot.android_sdk.IUnknotServiceCallback
 import org.unknot.android_sdk.ServiceState
@@ -90,6 +91,9 @@ class UnknotServiceConnection(
             if (location != null) {
                 callback.onLocation(location)
             }
+        }
+
+        override fun receiveGroundTruth(gtpoints: List<GtPoint?>?) {
         }
     }
 
