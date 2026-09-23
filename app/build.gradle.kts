@@ -71,14 +71,13 @@ dependencies {
     implementation(libs.androidx.material3)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.maplibre.compose)
     implementation(libs.accompanist.permissions)
-    implementation("org.unknot:android-sdk:1.0.54")
+    implementation("org.unknot:android-sdk:1.0.59")
 
-    implementation("androidx.compose.material3.adaptive:adaptive:1.3.0-beta01")
+    implementation("androidx.compose.material3.adaptive:adaptive:1.3.0")
 
     implementation("androidx.datastore:datastore-preferences:1.2.1")
 }

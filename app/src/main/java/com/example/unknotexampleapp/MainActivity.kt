@@ -152,7 +152,7 @@ class MainActivity : ComponentActivity(), UnknotServiceCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        serviceConnection.autoBind(this)
+        serviceConnection.registerBindingOnLifecycle(application, lifecycle)
 
         notification.registerChannel()
 
@@ -190,7 +190,7 @@ class MainActivity : ComponentActivity(), UnknotServiceCallback {
                                             ctx = this@MainActivity,
                                             args = sdkArgs(deviceId),
                                             notification = notification.getNotification("Session running"),
-                                            forwardPredictions = false,
+                                            forwardPredictions = true,
                                             // change to true if you only want Unknot locations to be
                                             // provided, even if the service is currently unavailable
                                             // because of some network or other error. When set to false

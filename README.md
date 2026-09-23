@@ -35,7 +35,7 @@ The Unknot SDK requires the host app to request these permissions to function:
 ## Gradle
 Add to the `dependencies` block of the app module's `build.gradle`:
 ```
-implementation("org.unknot:android-sdk:1.0.53")
+implementation("org.unknot:android-sdk:1.0.59")
 ```
 
 > **The SDK library is not hosted yet! Check back soon to get further details on how to configure maven to download the library.**
@@ -184,12 +184,12 @@ override fun onLocation(location: ForwardLocation) {
 
 ```
 
-Finally, in `onCreate` for instance, call the `autoBind` method:
+Finally, register the connection with the activity lifecycle in `onCreate`. It binds while the activity is started and unbinds when it stops:
 ```kotlin
 override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
-    serviceConnection.autoBind(this)
+    serviceConnection.registerBindingOnLifecycle(application, lifecycle)
     ...
 ```
 
