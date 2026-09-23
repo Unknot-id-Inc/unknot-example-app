@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.IndicationNodeFactory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,10 +28,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
@@ -151,6 +155,7 @@ class MainActivity : ComponentActivity(), UnknotServiceCallback {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
         serviceConnection.registerBindingOnLifecycle(application, lifecycle)
 
@@ -158,60 +163,68 @@ class MainActivity : ComponentActivity(), UnknotServiceCallback {
 
         setContent {
             UnknotExampleAppTheme {
-                Box(
+                Surface(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    color = MaterialTheme.colorScheme.background,
+                    contentColor = MaterialTheme.colorScheme.onBackground
                 ) {
-                    PermissionsProvider(permissionsRequired) { allGranted, request ->
-                        if (allGranted) {
-                            val ctx = LocalContext.current
-                            val prefsDeviceId by deviceIdFlow(ctx).collectAsStateWithLifecycle(null)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .safeDrawingPadding(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        PermissionsProvider(permissionsRequired) { allGranted, request ->
+                            if (allGranted) {
+                                val ctx = LocalContext.current
+                                val prefsDeviceId by deviceIdFlow(ctx).collectAsStateWithLifecycle(null)
 
-                            LaunchedEffect(prefsDeviceId) {
-                                if (prefsDeviceId == null) {
-                                    val rest = UnknotRest(BuildConfig.AUTH_TARGET, BuildConfig.API_KEY)
-                                    val newDeviceId = rest.registerDevice(ctx)
-                                    ctx.dataStore.edit {
-                                        it[DEVICE_ID] = newDeviceId
+                                LaunchedEffect(prefsDeviceId) {
+                                    if (prefsDeviceId == null) {
+                                        val rest = UnknotRest(BuildConfig.AUTH_TARGET, BuildConfig.API_KEY)
+                                        val newDeviceId = rest.registerDevice(ctx)
+                                        ctx.dataStore.edit {
+                                            it[DEVICE_ID] = newDeviceId
+                                        }
                                     }
                                 }
-                            }
 
-                            prefsDeviceId?.let { deviceId ->
-                                ServiceControls(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    state = serviceState,
-                                    deviceId = prefsDeviceId,
-                                    bound = serviceBound,
-                                    batchCount = batchCount,
-                                    currentLocation = currentLocation,
-                                    onStart = {
-                                        UnknotServiceController.startDataCollection(
-                                            ctx = this@MainActivity,
-                                            args = sdkArgs(deviceId),
-                                            notification = notification.getNotification("Session running"),
-                                            forwardPredictions = true,
-                                            // change to true if you only want Unknot locations to be
-                                            // provided, even if the service is currently unavailable
-                                            // because of some network or other error. When set to false
-                                            // Android system locations will be forwarded if no Unknot
-                                            // location has been provided for 10 or more seconds
-                                            disableForwardAndroidLocation = false
-                                        )
-                                    },
-                                    onStop = {
-                                        UnknotServiceController.stopDataCollection(
-                                            ctx = this@MainActivity,
-                                            notification = null
-                                        )
-                                    }
-                                )
-                            }
-                        } else {
-                            Button(
-                                onClick = { request() }
-                            ) {
-                                Text("Request Permissions")
+                                prefsDeviceId?.let { deviceId ->
+                                    ServiceControls(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        state = serviceState,
+                                        deviceId = prefsDeviceId,
+                                        bound = serviceBound,
+                                        batchCount = batchCount,
+                                        currentLocation = currentLocation,
+                                        onStart = {
+                                            UnknotServiceController.startDataCollection(
+                                                ctx = this@MainActivity,
+                                                args = sdkArgs(deviceId),
+                                                notification = notification.getNotification("Session running"),
+                                                forwardPredictions = true,
+                                                // change to true if you only want Unknot locations to be
+                                                // provided, even if the service is currently unavailable
+                                                // because of some network or other error. When set to false
+                                                // Android system locations will be forwarded if no Unknot
+                                                // location has been provided for 10 or more seconds
+                                                disableForwardAndroidLocation = false
+                                            )
+                                        },
+                                        onStop = {
+                                            UnknotServiceController.stopDataCollection(
+                                                ctx = this@MainActivity,
+                                                notification = null
+                                            )
+                                        }
+                                    )
+                                }
+                            } else {
+                                Button(
+                                    onClick = { request() }
+                                ) {
+                                    Text("Request Permissions")
+                                }
                             }
                         }
                     }

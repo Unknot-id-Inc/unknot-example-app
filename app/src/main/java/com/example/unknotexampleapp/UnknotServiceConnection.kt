@@ -30,7 +30,6 @@ interface UnknotServiceCallback {
     fun onUnbound()
     fun onBatchUpdate(count: Int, total: Int)
     fun onLocation(location: ForwardLocation)
-    fun onGroundTruthAlignmentStatus(status: GroundTruthAlignmentStatus) { }
 }
 
 class UnknotServiceConnection(
@@ -152,21 +151,16 @@ class UnknotServiceConnection(
             callback.onBatchUpdate(count, total)
         }
 
-        override fun videoUploadProgress(status: Int, bytesUploaded: Long, bytesTotal: Long) {
-        }
-
         override fun receiveLocation(location: ForwardLocation?) {
             if (location != null) {
                 callback.onLocation(location)
             }
         }
 
-        override fun receiveGroundTruth(gtpoints: List<GtPoint>) {
-        }
-
-        override fun receiveGroundTruthAlignmentStatus(status: GroundTruthAlignmentStatus?) {
-            status?.let { callback.onGroundTruthAlignmentStatus(it) }
-        }
+        /* internal functions, do not use */
+        override fun videoUploadProgress(status: Int, bytesUploaded: Long, bytesTotal: Long) { }
+        override fun receiveGroundTruth(gtpoints: List<GtPoint>) { }
+        override fun receiveGroundTruthAlignmentStatus(status: GroundTruthAlignmentStatus?) { }
         override fun receiveGroundTruthCalibrationSnapshot(snapshot: GroundTruthCalibrationSnapshot?) { }
     }
 
@@ -202,7 +196,4 @@ class UnknotServiceConnection(
 
     fun getServiceState(): ServiceState? =
         remoteService?.serviceState
-
-    /** Accept the active ground-truth drift warning and retain the current calibration transform. */
-    fun acknowledgeGroundTruthDrift(): Boolean = remoteService?.acknowledgeGroundTruthDrift() ?: false
 }
