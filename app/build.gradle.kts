@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.unknotexampleapp"
-        minSdk = 29
+        minSdk = 27
         targetSdk = 36
         versionCode = 2
         versionName = "1.1"
@@ -76,5 +76,9 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.maplibre.compose)
     implementation(libs.accompanist.permissions)
-    implementation("org.unknot:android-sdk:1.0.53")
+    implementation("org.unknot:android-sdk:1.0.54")
+
+    implementation("androidx.compose.material3.adaptive:adaptive:1.3.0-beta01")
+
+    implementation("androidx.datastore:datastore-preferences:1.2.1")
 }

@@ -2,12 +2,24 @@ package com.example.unknotexampleapp
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.IndicationNodeFactory
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.FocusInteraction
+import androidx.compose.foundation.interaction.InteractionSource
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowColumn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -15,9 +27,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,13 +42,31 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.ContentDrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.node.DelegatableNode
+import androidx.compose.ui.node.DrawModifierNode
+import androidx.compose.ui.node.invalidateDraw
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.window.core.layout.WindowSizeClass
 import com.example.unknotexampleapp.ui.theme.UnknotExampleAppTheme
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.rememberCameraState
 import org.maplibre.compose.expressions.dsl.const
@@ -53,6 +86,7 @@ import org.unknot.android_sdk.ForwardLocation
 import org.unknot.android_sdk.SdkArgs
 import org.unknot.android_sdk.ServiceState
 import org.unknot.android_sdk.UnknotServiceController
+import org.unknot.android_sdk.rest_api.UnknotRest
 
 private val basePermissions = listOf(
     Manifest.permission.ACCESS_FINE_LOCATION,
@@ -62,9 +96,6 @@ private val basePermissions = listOf(
     Manifest.permission.CHANGE_NETWORK_STATE,
     Manifest.permission.ACCESS_NETWORK_STATE,
     Manifest.permission.WAKE_LOCK,
-    Manifest.permission.FOREGROUND_SERVICE,
-    Manifest.permission.ACTIVITY_RECOGNITION,
-    Manifest.permission.ACCESS_BACKGROUND_LOCATION,
     Manifest.permission.READ_PHONE_STATE
 )
 
@@ -79,11 +110,24 @@ private val permissionsRequired = permissionsCompat(basePermissions,
         Manifest.permission.BLUETOOTH_CONNECT,
         Manifest.permission.BLUETOOTH_ADVERTISE
     ),
-    -Build.VERSION_CODES.R to listOf(
+    /*-Build.VERSION_CODES.R to listOf(
         Manifest.permission.BLUETOOTH,
         Manifest.permission.BLUETOOTH_ADMIN,
+    ),*/
+    Build.VERSION_CODES.Q to listOf(
+        Manifest.permission.ACTIVITY_RECOGNITION,
+        Manifest.permission.ACCESS_BACKGROUND_LOCATION,
+    ),
+    Build.VERSION_CODES.P to listOf(
+        Manifest.permission.FOREGROUND_SERVICE,
     )
 )
+
+val DEVICE_ID = stringPreferencesKey("device_id")
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+fun deviceIdFlow(ctx: Context): Flow<String?> = ctx.dataStore.data.map { prefs ->
+    prefs[DEVICE_ID]
+}
 
 class MainActivity : ComponentActivity(), UnknotServiceCallback {
 
@@ -96,9 +140,9 @@ class MainActivity : ComponentActivity(), UnknotServiceCallback {
 
     private val notification = ExampleNotification(this)
 
-    private val sdkArgs = SdkArgs(
+    private fun sdkArgs(deviceId: String) = SdkArgs(
         apiKey = BuildConfig.API_KEY,
-        deviceId = BuildConfig.DEVICE_ID,
+        deviceId = deviceId,
         locationId = "",
         authTarget = BuildConfig.AUTH_TARGET,
         ingesterTarget = BuildConfig.INGESTER_TARGET,
@@ -120,32 +164,49 @@ class MainActivity : ComponentActivity(), UnknotServiceCallback {
                 ) {
                     PermissionsProvider(permissionsRequired) { allGranted, request ->
                         if (allGranted) {
-                            ServiceControls(
-                                state = serviceState,
-                                bound = serviceBound,
-                                batchCount = batchCount,
-                                currentLocation = currentLocation,
-                                onStart = {
-                                    UnknotServiceController.startDataCollection(
-                                        ctx = this@MainActivity,
-                                        args = sdkArgs,
-                                        notification = notification.getNotification("Session running"),
-                                        forwardPredictions = true,
-                                        // change to true if you only want Unknot locations to be
-                                        // provided, even if the service is currently unavailable
-                                        // because of some network or other error. When set to false
-                                        // Android system locations will be forwarded if no Unknot
-                                        // location has been provided for 10 or more seconds
-                                        disableForwardAndroidLocation = false
-                                    )
-                                },
-                                onStop = {
-                                    UnknotServiceController.stopDataCollection(
-                                        ctx = this@MainActivity,
-                                        notification = null
-                                    )
+                            val ctx = LocalContext.current
+                            val prefsDeviceId by deviceIdFlow(ctx).collectAsStateWithLifecycle(null)
+
+                            LaunchedEffect(prefsDeviceId) {
+                                if (prefsDeviceId == null) {
+                                    val rest = UnknotRest(BuildConfig.AUTH_TARGET, BuildConfig.API_KEY)
+                                    val newDeviceId = rest.registerDevice(ctx)
+                                    ctx.dataStore.edit {
+                                        it[DEVICE_ID] = newDeviceId
+                                    }
                                 }
-                            )
+                            }
+
+                            prefsDeviceId?.let { deviceId ->
+                                ServiceControls(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    state = serviceState,
+                                    deviceId = prefsDeviceId,
+                                    bound = serviceBound,
+                                    batchCount = batchCount,
+                                    currentLocation = currentLocation,
+                                    onStart = {
+                                        UnknotServiceController.startDataCollection(
+                                            ctx = this@MainActivity,
+                                            args = sdkArgs(deviceId),
+                                            notification = notification.getNotification("Session running"),
+                                            forwardPredictions = false,
+                                            // change to true if you only want Unknot locations to be
+                                            // provided, even if the service is currently unavailable
+                                            // because of some network or other error. When set to false
+                                            // Android system locations will be forwarded if no Unknot
+                                            // location has been provided for 10 or more seconds
+                                            disableForwardAndroidLocation = false
+                                        )
+                                    },
+                                    onStop = {
+                                        UnknotServiceController.stopDataCollection(
+                                            ctx = this@MainActivity,
+                                            notification = null
+                                        )
+                                    }
+                                )
+                            }
                         } else {
                             Button(
                                 onClick = { request() }
@@ -252,68 +313,179 @@ fun Map(
 fun ServiceControls(
     state: ServiceState?,
     bound: Boolean,
+    deviceId: String?,
     batchCount: Int,
     currentLocation: ForwardLocation?,
     onStart: () -> Unit,
     onStop: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    notShort: Boolean = currentWindowAdaptiveInfoV2().windowSizeClass.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND)
 ) {
-    Column(modifier) {
-        Map(
-            modifier = Modifier
-                .fillMaxWidth(.8f)
-                //.weight(1f)
-                .height(300.dp)
-                .padding(bottom = 30.dp)
-            ,
-            currentLocation = currentLocation
-        )
-
-        Column(Modifier.align(Alignment.CenterHorizontally)) {
-            Field("Service bound", bound)
-            Field(
-                "Service state",
-                when (state) {
-                    is ServiceState.Running -> "Running"
-                    is ServiceState.Idle -> "Idle"
-                    is ServiceState.Error -> "Error"
-                    ServiceState.Syncing -> "Syncing"
-                    ServiceState.Unspecified -> "Unspecified"
-                    null -> "Stopped"
-                }
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        if (notShort) {
+            Map(
+                modifier = Modifier
+                    .fillMaxWidth(.8f)
+                    //.weight(1f)
+                    .height(300.dp)
+                    .padding(bottom = 30.dp),
+                currentLocation = currentLocation
             )
+        }
 
-
-            Field("Session running", state is ServiceState.Running)
-            Field("Device ID", BuildConfig.DEVICE_ID)
-            Field("Session ID", (state as? ServiceState.Running)?.sessionId ?: "null")
-            Field("Batches to sync", "$batchCount")
+        if (notShort) {
+            ServiceInfo(bound, state, deviceId, batchCount, true)
 
             Spacer(Modifier.height(10.dp))
 
-            if (state is ServiceState.Running) {
-                Button(
-                    onClick = onStop,
-                    colors = ButtonDefaults.buttonColors(
-                        contentColor = Color.White,
-                        containerColor = Color.Red
-                    )
-                ) {
-                    Text("STOP SERVICE")
+            StartStopButton(
+                state = state,
+                onStart = onStart,
+                onStop = onStop
+            )
+        } else {
+            var focused by remember { mutableStateOf(false) }
+            StartStopButton(
+                modifier = Modifier
+                    //.indication(remember { MutableInteractionSource() }, FocusIndication)
+                    .onFocusChanged {
+                        focused = it.isFocused
+                    }
+                    .let {
+                        if (focused) it.border(3.dp, Color.Red)
+                        else it
+                    },
+                state = state,
+                onStart = onStart,
+                onStop = onStop
+            )
+
+            Spacer(Modifier.height(10.dp))
+
+            ServiceInfo(bound, state, deviceId, batchCount, false)
+        }
+    }
+}
+
+private class FocusIndicationNode(private val interactionSource: InteractionSource) :
+    Modifier.Node(), DrawModifierNode {
+    private var isFocused = false
+
+    override fun onAttach() {
+        coroutineScope.launch {
+            var focusCount = 0
+            interactionSource.interactions.collect { interaction ->
+                when (interaction) {
+                    is FocusInteraction.Focus -> focusCount++
+                    is FocusInteraction.Unfocus -> focusCount--
                 }
-            } else {
-                Button(
-                    onClick = onStart,
-                    colors = ButtonDefaults.buttonColors(
-                        contentColor = Color.White,
-                        containerColor = Color(0xff007700)
-                    )
-                ) {
-                    Text("START SERVICE")
+                val focused = focusCount > 0
+                if (isFocused != focused) {
+                    isFocused = focused
+                    invalidateDraw()
                 }
             }
         }
+    }
 
+    override fun ContentDrawScope.draw() {
+        drawContent()
+        if (isFocused) {
+            drawRect(size = size, color = Color.Red, alpha = 1f, style = Stroke(3f))
+        }
+    }
+}
+
+object FocusIndication : IndicationNodeFactory {
+    override fun create(interactionSource: InteractionSource): DelegatableNode {
+        return FocusIndicationNode(interactionSource)
+    }
+
+    override fun hashCode(): Int = -1
+
+    override fun equals(other: Any?) = other === this
+}
+
+val ReverseArrangement = object : Arrangement.Vertical {
+    override fun Density.arrange(
+        totalSize: Int,
+        sizes: IntArray,
+        outPositions: IntArray
+    ) {
+        var current = 0
+        // Iterate through sizes in reverse to calculate positions from the top
+        for (i in sizes.indices.reversed()) {
+            outPositions[i] = current
+            current += sizes[i]
+        }
+    }
+}
+
+@Composable
+fun ServiceInfo(
+    bound: Boolean,
+    state: ServiceState?,
+    deviceId: String?,
+    batchCount: Int,
+    notShort: Boolean
+) {
+    FlowColumn(
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        //maxLines = if (notShort) 1 else 2
+    ) {
+        Field(if (notShort) "Service bound" else "Bound", bound)
+        Field(
+            if (notShort) "Service state" else "State",
+            when (state) {
+                is ServiceState.Running -> "Running"
+                is ServiceState.Idle -> "Idle"
+                is ServiceState.Error -> "Error"
+                ServiceState.Syncing -> "Syncing"
+                ServiceState.Unspecified -> "Unspecified"
+                null -> "Stopped"
+            }
+        )
+
+
+        Field(if (notShort) "Session running" else "Running", state is ServiceState.Running)
+        Field("Device ID", deviceId)
+        Field("Session ID", (state as? ServiceState.Running)?.sessionId ?: "null")
+        Field(if (notShort) "Batches to sync" else "Batches", "$batchCount")
+    }
+}
+
+@Composable
+fun StartStopButton(
+    state: ServiceState?,
+    onStart: () -> Unit,
+    onStop: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (state is ServiceState.Running) {
+        Button(
+            modifier = modifier,
+            onClick = onStop,
+            colors = ButtonDefaults.buttonColors(
+                contentColor = Color.White,
+                containerColor = Color.Red
+            )
+        ) {
+            Text("STOP SERVICE")
+        }
+    } else {
+        Button(
+            modifier = modifier,
+            onClick = onStart,
+            colors = ButtonDefaults.buttonColors(
+                contentColor = Color.White,
+                containerColor = Color(0xff007700)
+            )
+        ) {
+            Text("START SERVICE")
+        }
     }
 }
 
@@ -347,22 +519,25 @@ fun Field(
 @Composable
 fun Field(
     label: String,
-    value: String
+    value: String?
 ) {
     Field(label) {
-        Text(value)
+        Text(value ?: "null")
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, heightDp = 100)
 @Composable
 fun ServiceControlsPreview() {
     ServiceControls(
+        modifier = Modifier.fillMaxSize(),
         state = ServiceState.Running("1234", "abcdefg1234-zzz"),
+        deviceId = "123",
         bound = true,
         batchCount = 0,
         onStart = {},
         onStop = {},
-        currentLocation = null
+        currentLocation = null,
+        notShort = false
     )
 }

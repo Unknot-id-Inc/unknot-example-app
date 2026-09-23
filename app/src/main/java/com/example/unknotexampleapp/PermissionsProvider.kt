@@ -42,6 +42,7 @@ inline fun PermissionsProvider(
     }
 
     val requestAllPermissions = {
+        println("RPERMS: ${permissionState.permissions}")
         if (!permissionState.allPermissionsGranted)
             permissionState.launchMultiplePermissionRequest()
         else if (backgroundPermissionState != null && !backgroundPermissionState.status.isGranted)
@@ -49,6 +50,7 @@ inline fun PermissionsProvider(
     }
 
     LaunchedEffect(permissionState.allPermissionsGranted) {
+        println("RPERMS: ${permissionState.revokedPermissions.joinToString(", ") { "${it.permission}: ${it.status}" }}")
         if (!permissionState.allPermissionsGranted ||
             (permissionState.allPermissionsGranted && backgroundPermissionState?.status?.isGranted == false)
         )
