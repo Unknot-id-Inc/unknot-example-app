@@ -3,7 +3,7 @@
 This app demonstrates basic usage and control of the Unknot Android SDK.
 
 ## Prerequisites
-- Minimum Android SDK level 28 (Android 9)
+- Minimum Android SDK level 27 (Android 8.1 Oreo)
 - An Unknot API key
 
 ## Permissions
@@ -20,7 +20,6 @@ The Unknot SDK requires the host app to request these permissions to function:
  - [CHANGE_WIFI_STATE](https://developer.android.com/reference/android/Manifest.permission#CHANGE_WIFI_STATE)
  - [ACCESS_NETWORK_STATE](https://developer.android.com/reference/android/Manifest.permission#ACCESS_NETWORK_STATE)
  - [CHANGE_NETWORK_STATE](https://developer.android.com/reference/android/Manifest.permission#CHANGE_NETWORK_STATE)
- - [READ_PHONE_STATE](https://developer.android.com/reference/android/Manifest.permission#READ_PHONE_STATE)
  - [WAKE_LOCK](https://developer.android.com/reference/android/Manifest.permission#WAKE_LOCK)
  - [FOREGROUND_SERVICE](https://developer.android.com/reference/android/Manifest.permission#FOREGROUND_SERVICE)
  - [BLUETOOTH_ADMIN](https://developer.android.com/reference/android/Manifest.permission#BLUETOOTH_ADMIN)
